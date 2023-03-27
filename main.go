@@ -2,61 +2,15 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 
+	"github.com/diakovliev/go-neyral/common"
 	"gonum.org/v1/gonum/mat"
 )
 
-func sigma(x float64) float64 {
-	return 1 / (1 + math.Exp(-x))
-}
-
-func invSigma(x float64) float64 {
-	return math.Log(-(x / (x - 1)))
-}
-
-// see: https://math.stackexchange.com/questions/1335693/invertible-matrix-of-non-square-matrix
-func matRightInversion(A *mat.Dense) (ret *mat.Dense) {
-
-	T := A.T()
-
-	AT := &mat.Dense{}
-	AT.Mul(A, T)
-
-	IAT := &mat.Dense{}
-	IAT.Inverse(AT)
-
-	R := &mat.Dense{}
-	R.Mul(T, IAT)
-
-	ret = &mat.Dense{}
-	ret.CloneFrom(R)
-
-	return
-}
-
-// see: https://math.stackexchange.com/questions/1335693/invertible-matrix-of-non-square-matrix
-func matLeftInversion(A *mat.Dense) (ret *mat.Dense) {
-
-	T := A.T()
-
-	TA := &mat.Dense{}
-	TA.Mul(T, A)
-
-	ITA := &mat.Dense{}
-	ITA.Inverse(TA)
-
-	R := &mat.Dense{}
-	R.Mul(ITA, T)
-
-	ret = &mat.Dense{}
-	ret.CloneFrom(R)
-
-	return
-}
-
 func main() {
+
+	activation := &common.Sigma{}
 
 	inputs := 2
 	outputs := 3
@@ -83,7 +37,7 @@ func main() {
 	// Y = sigma(S)
 	Y := &mat.Dense{}
 	Y.Apply(func(i, j int, v float64) float64 {
-		return sigma(v)
+		return activation.F(v)
 	}, S)
 
 	fmt.Printf("%s\n%v\n", "Y = ", mat.Formatted(Y, mat.Squeeze()))
@@ -96,14 +50,14 @@ func main() {
 
 	T := &mat.Dense{}
 	T.Apply(func(i, j int, v float64) float64 {
-		return invSigma(v)
+		return activation.I(v)
 	}, E)
 
 	fmt.Printf("%s\n%v\n", "T = ", mat.Formatted(T, mat.Squeeze()))
 
 	// Backward pass
-	IW := matLeftInversion(W)
-	//IW := matRightInversion(W)
+	IW := common.MatLeftInversion(W)
+	//IW := common.MatRightInversion(W)
 	fmt.Printf("%s\n%v\n", "IW = ", mat.Formatted(IW, mat.Squeeze()))
 
 	OX := &mat.Dense{}
