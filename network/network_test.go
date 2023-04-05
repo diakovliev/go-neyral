@@ -12,7 +12,7 @@ func TestNetwork(t *testing.T) {
 	expectedError := 0.01
 	speed := 1.
 
-	net := NewNetwork(common.Sigma{}, 2).Init(2, 3, 1)
+	net := NewNetwork(common.Sigma{}, 2).Init(2, 2, 1)
 
 	type teachData struct {
 		In []float64
