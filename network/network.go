@@ -41,11 +41,11 @@ func (n Network) BackPropagate(speed float64, expectations []float64) *Network {
 	last := len(n.L) - 1
 	for i := last; i >= 0; i-- {
 		n.L[i] = n.L[i].SetExpectations(errs)
-		//n.L[i] = n.L[i].UpdateWeights(speed)
+		n.L[i] = n.L[i].UpdateWeights(speed)
 		errs = n.L[i].BackPropagate(errs)
 	}
 	for i := len(n.L) - 1; i >= 0; i-- {
-		n.L[i] = n.L[i].UpdateWeights(speed)
+		//n.L[i] = n.L[i].UpdateWeights(speed)
 	}
 	return &n
 }
