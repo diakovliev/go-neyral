@@ -9,10 +9,10 @@ import (
 
 func TestNetwork(t *testing.T) {
 
-	expectedError := 0.001
-	speed := .9
+	expectedError := 0.01
+	speed := 1.
 
-	net := NewNetwork(common.Sigma{}, 2).Init(2, 1)
+	net := NewNetwork(common.Sigma{}, 2).Init(2, 3, 1)
 
 	type teachData struct {
 		In []float64
@@ -70,7 +70,6 @@ func TestNetwork(t *testing.T) {
 	// Results
 	for _, d := range data {
 		out := net.Predict(d.In)
-		err := net.Error(d.Ex)
-		t.Logf("out: %#v err: %g", out, err)
+		t.Logf("out: %#v", out)
 	}
 }

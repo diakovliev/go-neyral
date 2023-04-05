@@ -22,6 +22,7 @@ func (n Network) Init(layersCapacities ...uint) *Network {
 		n.L = append(n.L, NewLayer(n.F).
 			WithDimensions(uint(prevLayerCapacity), layersCapacities[i]).
 			InitWeights())
+		prevLayerCapacity = layersCapacities[i]
 	}
 	return &n
 }
@@ -39,16 +40,12 @@ func (n Network) BackPropagate(speed float64, expectations []float64) *Network {
 	errs := expectations
 	last := len(n.L) - 1
 	for i := last; i >= 0; i-- {
-		if last == i {
-			n.L[i] = n.L[i].SetExpectations(errs)
-		} else {
-			n.L[i] = n.L[i].SetErrors(errs)
-		}
-		n.L[i] = n.L[i].UpdateWeights(speed)
+		n.L[i] = n.L[i].SetExpectations(errs)
+		//n.L[i] = n.L[i].UpdateWeights(speed)
 		errs = n.L[i].BackPropagate(errs)
 	}
 	for i := len(n.L) - 1; i >= 0; i-- {
-		//n.L[i] = n.L[i].UpdateWeights(speed)
+		n.L[i] = n.L[i].UpdateWeights(speed)
 	}
 	return &n
 }
