@@ -81,8 +81,8 @@ func (l Layer) BackPropagate(out []float64) (in []float64) {
 
 	IY := &mat.Dense{}
 	IY.Apply(func(i int, _ int, v float64) float64 {
-		//return l.N[i].F.I(v)
-		return v
+		return l.N[i].F.I(v)
+		//return v
 	}, Y)
 
 	OX := &mat.Dense{}
@@ -99,16 +99,6 @@ func (l Layer) BackPropagate(out []float64) (in []float64) {
 }
 
 func (l Layer) SetExpectations(e []float64) *Layer {
-	if len(e) != len(l.N) {
-		panic(fmt.Errorf("expectations length: %d is not matches layer neyrons count: %d", len(e), len(l.N)))
-	}
-	for i := 0; i < len(l.N); i++ {
-		l.N[i].E = e[i] - l.N[i].Out
-	}
-	return &l
-}
-
-func (l Layer) SetErrors(e []float64) *Layer {
 	if len(e) != len(l.N) {
 		panic(fmt.Errorf("expectations length: %d is not matches layer neyrons count: %d", len(e), len(l.N)))
 	}

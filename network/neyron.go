@@ -56,10 +56,10 @@ func (n Neyron) Activate(in []float64) *Neyron {
 }
 
 func (n Neyron) UpdateWeights(speed float64) *Neyron {
-	momentum := 0.5
+	momentum := 0.4
 	n.D = make([]float64, len(n.W))
 	for i := 0; i < len(n.W); i++ {
-		delta := speed*n.E*n.F.P(n.Out)*n.In[i] + momentum*n.D[i]
+		delta := speed*(n.E-n.Out)*n.F.P(n.Out)*n.In[i] + momentum*n.D[i]
 		n.W[i] += delta
 		n.D[i] = delta
 	}
@@ -67,5 +67,5 @@ func (n Neyron) UpdateWeights(speed float64) *Neyron {
 }
 
 func (n Neyron) Error() float64 {
-	return math.Pow(n.E, 2)
+	return math.Pow(n.E-n.Out, 2)
 }
