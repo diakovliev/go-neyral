@@ -15,14 +15,30 @@ func NewNetwork(f common.Activation, ninputs uint) *Network {
 	}
 }
 
-func (n Network) Init(layersCapacities ...uint) *Network {
+func (n Network) Init(withActivationNeyrons bool, layersCapacities ...uint) *Network {
 	n.L = make([]*Layer, 0)
 	prevLayerCapacity := n.N
 	for i := 0; i < len(layersCapacities); i++ {
-		n.L = append(n.L, NewLayer(n.F).
-			WithDimensions(uint(prevLayerCapacity), layersCapacities[i]).
-			InitWeights())
-		prevLayerCapacity = layersCapacities[i]
+
+		var l *Layer
+		if i < len(layersCapacities)-1 && withActivationNeyrons {
+			l = NewLayer(n.F).
+				WithDimensions(uint(prevLayerCapacity), layersCapacities[i]).
+				WithActivation().
+				InitWeights()
+		} else {
+			l = NewLayer(n.F).
+				WithDimensions(uint(prevLayerCapacity), layersCapacities[i]).
+				InitWeights()
+		}
+
+		n.L = append(n.L, l)
+
+		if i < len(layersCapacities)-1 && withActivationNeyrons {
+			prevLayerCapacity = layersCapacities[i] + 1
+		} else {
+			prevLayerCapacity = layersCapacities[i]
+		}
 	}
 	return &n
 }
@@ -36,16 +52,13 @@ func (n Network) Predict(in []float64) (out []float64) {
 	return
 }
 
-func (n Network) BackPropagate(speed float64, expectations []float64) *Network {
-	errs := expectations
+func (n Network) BackPropagate(speed float64, momentum float64, expectations []float64) *Network {
 	last := len(n.L) - 1
+	n.L[last] = n.L[last].SetExpectations(expectations)
+	nextLayerDeltas := []float64{}
 	for i := last; i >= 0; i-- {
-		n.L[i] = n.L[i].SetExpectations(errs)
-		n.L[i] = n.L[i].UpdateWeights(speed)
-		errs = n.L[i].BackPropagate(errs)
-	}
-	for i := len(n.L) - 1; i >= 0; i-- {
-		//n.L[i] = n.L[i].UpdateWeights(speed)
+		n.L[i] = n.L[i].UpdateWeights(speed, momentum, nextLayerDeltas)
+		nextLayerDeltas = n.L[i].Deltas()
 	}
 	return &n
 }

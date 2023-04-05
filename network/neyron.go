@@ -10,7 +10,8 @@ import (
 )
 
 type Neyron struct {
-	F common.Activation
+	F            common.Activation
+	IsActivation bool
 	// Weights
 	W []float64
 	D []float64
@@ -33,6 +34,9 @@ func (n Neyron) WithInputs(count uint) *Neyron {
 
 func (n Neyron) InitWeights() *Neyron {
 	n.W = make([]float64, len(n.In))
+	if n.IsActivation {
+		return &n
+	}
 	for i := 0; i < len(n.In); i++ {
 		n.W[i] = rand.NormFloat64()
 	}
@@ -45,6 +49,11 @@ func (n Neyron) Activate(in []float64) *Neyron {
 		panic(fmt.Errorf("input size mismatch: got: %d expected: %d", len(in), len(n.In)))
 	}
 
+	if n.IsActivation {
+		n.Out = 1.
+		return &n
+	}
+
 	n.In = in[:]
 
 	vin := mat.NewVecDense(len(n.In), n.In)
@@ -55,11 +64,19 @@ func (n Neyron) Activate(in []float64) *Neyron {
 	return &n
 }
 
-func (n Neyron) UpdateWeights(speed float64) *Neyron {
-	momentum := 0.4
+func (n Neyron) UpdateWeights(speed float64, momentum float64, nextLayerDelta *float64) *Neyron {
+	if n.IsActivation {
+		return &n
+	}
 	n.D = make([]float64, len(n.W))
 	for i := 0; i < len(n.W); i++ {
-		delta := speed*(n.E-n.Out)*n.F.P(n.Out)*n.In[i] + momentum*n.D[i]
+		delta := speed * n.F.P(n.Out) * n.In[i]
+		if nextLayerDelta == nil {
+			delta *= (n.E - n.Out)
+			delta += momentum * n.D[i]
+		} else {
+			delta *= *nextLayerDelta * n.W[i]
+		}
 		n.W[i] += delta
 		n.D[i] = delta
 	}
@@ -67,5 +84,8 @@ func (n Neyron) UpdateWeights(speed float64) *Neyron {
 }
 
 func (n Neyron) Error() float64 {
+	if n.IsActivation {
+		return 0.
+	}
 	return math.Pow(n.E-n.Out, 2)
 }

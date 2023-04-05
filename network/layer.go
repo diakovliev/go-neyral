@@ -29,6 +29,13 @@ func (l Layer) WithDimensions(icount, ncount uint) *Layer {
 	return &l
 }
 
+func (l Layer) WithActivation() *Layer {
+	an := NewNeyron(l.F).WithInputs(l.iCount)
+	an.IsActivation = true
+	l.N = append(l.N, an)
+	return &l
+}
+
 func (l Layer) InitWeights() *Layer {
 	for i := 0; i < len(l.N); i++ {
 		l.N[i] = l.N[i].InitWeights()
@@ -44,9 +51,9 @@ func (l Layer) W() *mat.Dense {
 	return w
 }
 
-func (l Layer) IW() *mat.Dense {
-	return common.MatLeftInversion(l.W())
-}
+// func (l Layer) IW() *mat.Dense {
+// 	return common.MatLeftInversion(l.W())
+// }
 
 func (l Layer) Out() (ret []float64) {
 	ret = make([]float64, len(l.N))
@@ -66,8 +73,12 @@ func (l Layer) Activate(in []float64) *Layer {
 
 	Y := &mat.Dense{}
 	Y.Apply(func(i int, _ int, v float64) float64 {
-		l.N[i].In = in[:]
-		l.N[i].Out = l.N[i].F.F(v)
+		if l.N[i].IsActivation {
+			l.N[i].Out = 1.
+		} else {
+			l.N[i].In = in[:]
+			l.N[i].Out = l.N[i].F.F(v)
+		}
 		return l.N[i].Out
 	}, S)
 
@@ -75,28 +86,27 @@ func (l Layer) Activate(in []float64) *Layer {
 }
 
 // BackPropagate through layer
-func (l Layer) BackPropagate(out []float64) (in []float64) {
+// func (l Layer) BackPropagate(out []float64) (in []float64) {
 
-	Y := mat.NewDense(len(out), 1, out)
+// 	Y := mat.NewDense(len(out), 1, out)
 
-	IY := &mat.Dense{}
-	IY.Apply(func(i int, _ int, v float64) float64 {
-		return l.N[i].F.I(v)
-		//return v
-	}, Y)
+// 	IY := &mat.Dense{}
+// 	IY.Apply(func(i int, _ int, v float64) float64 {
+// 		return l.N[i].F.I(v)
+// 	}, Y)
 
-	OX := &mat.Dense{}
-	OX.Mul(l.IW(), IY)
+// 	OX := &mat.Dense{}
+// 	OX.Mul(l.IW(), IY)
 
-	CX := OX.ColView(0)
-	in = make([]float64, CX.Len())
+// 	CX := OX.ColView(0)
+// 	in = make([]float64, CX.Len())
 
-	for i := 0; i < CX.Len(); i++ {
-		in[i] = CX.AtVec(i)
-	}
+// 	for i := 0; i < CX.Len(); i++ {
+// 		in[i] = CX.AtVec(i)
+// 	}
 
-	return
-}
+// 	return
+// }
 
 func (l Layer) SetExpectations(e []float64) *Layer {
 	if len(e) != len(l.N) {
@@ -108,9 +118,13 @@ func (l Layer) SetExpectations(e []float64) *Layer {
 	return &l
 }
 
-func (l Layer) UpdateWeights(speed float64) *Layer {
+func (l Layer) UpdateWeights(speed float64, momentum float64, nextLayerDeltas []float64) *Layer {
 	for i := 0; i < len(l.N); i++ {
-		l.N[i] = l.N[i].UpdateWeights(speed)
+		var nextLayerDelta *float64
+		if len(nextLayerDeltas) > 0 {
+			nextLayerDelta = &nextLayerDeltas[i]
+		}
+		l.N[i] = l.N[i].UpdateWeights(speed, momentum, nextLayerDelta)
 	}
 	return &l
 }
@@ -123,4 +137,16 @@ func (l Layer) Error() float64 {
 	sum = math.Sqrt(sum)
 	sum /= math.Sqrt(float64(len(l.N)))
 	return sum
+}
+
+func (l Layer) Deltas() []float64 {
+	ret := make([]float64, l.iCount)
+	for i := 0; i < int(l.iCount); i++ {
+		for n := 0; n < len(l.N); n++ {
+			if !l.N[n].IsActivation {
+				ret[i] += l.N[n].D[i]
+			}
+		}
+	}
+	return ret
 }
