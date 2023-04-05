@@ -33,7 +33,7 @@ func TestLayerLearn(t *testing.T) {
 
 		t.Logf("%d: err: %#v", i, tl.Error())
 
-		tl = tl.UpdateWeights(speed)
+		tl = tl.UpdateWeights(speed, 0., []float64{})
 		out = tl.Activate(in).Out()
 
 		t.Logf("%d: out: %#v", i, out)
